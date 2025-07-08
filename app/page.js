@@ -11,31 +11,34 @@ export default function Home() {
   const [shortUrl, setShortUrl] = useState("");
 
   const shorten = async () => {
-    if (!url || !url.startsWith("http")) {
-      toast.error("Please enter a valid URL starting with http or https.");
-      return;
+  if (!url || !url.startsWith("http")) {
+    toast.error("Please enter a valid URL starting with http or https.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/shorten", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+
+    const text = await res.text(); // get raw text first
+
+    if (!res.ok) {
+      throw new Error(
+        JSON.parse(text)?.error || "Failed to shorten URL"
+      );
     }
 
-    try {
-      const res = await fetch("/api/shorten", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to shorten URL");
-      }
-
-      const data = await res.json();
-      setShortUrl(data.shortUrl);
-      toast.success("Short URL generated successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Something went wrong.");
-    }
-  };
+    const data = JSON.parse(text); // safe now
+    setShortUrl(data.shortUrl);
+    toast.success("Short URL created successfully!");
+  } catch (err) {
+    console.error("Shorten Error:", err);
+    toast.error(err.message || "Something went wrong.");
+  }
+};
 
   return (
     <main className="min-h-screen bg-gradient-to-tr from-sky-100 via-blue-50 to-white flex items-center justify-center px-4">
